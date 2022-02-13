@@ -2,3 +2,4 @@ networkx
 pandas
 pyvis
 streamlit
+torch
