@@ -1,3 +1,5 @@
+import csv
+import torch
 import pandas as pd
 import networkx as nx
 from pyvis.network import Network
@@ -7,23 +9,29 @@ import streamlit.components.v1 as components
 
 st.title('Moran\'s app')
 G = nx.Graph()
-first = True
-i = 0
-with open('moran.csv', newline='', encoding='utf8') as csvfile:
-    reader = reader(csvfile)
-    for row in reader:
-        if first:
-            name_list = row[1:]
-            G.add_nodes_from(name_list, size=5)
-            first = False
-        else:
-            for j in range(1, 24):
-                val = int(row[j])
-                if val > 0:
-                    G.add_edge(name_list[i], name_list[j-1], width=val)
-            i += 1
+# r = csv.reader(open('moran.csv', encoding='utf8'))  # Here your csv file
+# lines = list(r)
+# torch.save(lines, 'moran.data')
+data = torch.load('moran.data')
 
-st.write(pd.read_csv('moran.csv'))
+name_list = data[0][1:]
+G.add_nodes_from(name_list, size=5)
+
+for i in range(1, len(data)):
+    for j in range(1, 24):
+        val = int(data[i][j])
+        if val > 0:
+            G.add_edge(name_list[i-1], name_list[j-1], width=val)
+    i += 1
+
+# st.write(pd.read_csv('moran.csv'))
+client_for_changing = st.selectbox('Choose client for name changing', name_list)
+new_name = st.text_input('Change the name of ' + str(client_for_changing) + ' to:')
+if new_name != '':
+    client_ind = [i for i in range(len(name_list)) if client_for_changing == name_list[i]][0]
+    data[0][client_ind + 1] = new_name
+    data[client_ind][0] = new_name
+    torch.save(data, 'moran.data')
 clients = st.multiselect('Select clients', name_list, default=name_list)
 
 filtered_G = G.copy()
